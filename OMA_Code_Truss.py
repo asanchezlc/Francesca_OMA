@@ -18,7 +18,7 @@ from pyoma2.setup import SingleSetup
 # PARAMETERS
 # ============================================================
 output_dir = pathlib.Path("./results")
-figures_dir = output_dir / "plots"
+figures_dir = pathlib.Path("./plots")
 output_dir.mkdir(exist_ok=True)
 
 OMA_METHOD = "FDD"  # "FDD", "EFDD", or "FSDD"; Best results with EFDD
@@ -226,4 +226,4 @@ results = {
     "Ed": Ed
 }
 
-outils.save_json_serialized(results, output_dir / f"{OMA_METHOD}_results.json")
+outils.save_json_serialized(results, output_dir / f"{OMA_METHOD}_TRUSS_results.json")
