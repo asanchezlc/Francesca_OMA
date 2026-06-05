@@ -1,0 +1,20 @@
+GENETIC ALGORITHM SENSOR SELECTION SUMMARY
+=======================================================
+
+Number of sensors: 10
+Subset size k: 3
+Population size: 6
+Generations: 5
+Independent runs: 4
+
+Best GA solution:
+  Sensors: Sensor2, Sensor3, Sensor6
+  Energy: 0.0538023154
+  Selected count: 3
+
+Across-run statistics:
+  Best energy: 0.0538023154
+  Mean energy: 0.0753611372
+  Std energy: 0.0431176437
+  Worst energy: 0.1400376027
+  Unique solutions: 2

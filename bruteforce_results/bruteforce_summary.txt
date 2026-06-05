@@ -1,0 +1,17 @@
+BRUTE-FORCE SENSOR SELECTION SUMMARY
+==================================================
+
+Number of sensors: 10
+Subset size k: 3
+Total combinations tested: 120
+Estimated symmetry axis (x): 0.000000
+
+Best subset:
+  Rank: 1
+  Sensors: Sensor2, Sensor3, Sensor6
+  Energy: 0.0538023154
+  Utility term: -2.1641994300
+  Redundancy term: 1.6180007758
+  Geometry term: 0.6000009697
+  Symmetry term: 0.0000000000
+

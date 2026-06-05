@@ -1,0 +1,2 @@
+run,seed,energy,selected_count,subset_indices,subset_sensors
+1,42,0.05380231541106184,3,"[1, 2, 5]","Sensor2, Sensor3, Sensor6"

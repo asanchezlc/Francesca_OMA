@@ -1,0 +1,5 @@
+rank,run,seed,energy,selected_count,subset_indices,subset_sensors
+1,1,42,0.05380231541106184,3,"[1, 2, 5]","Sensor2, Sensor3, Sensor6"
+2,2,43,0.05380231541106184,3,"[1, 2, 5]","Sensor2, Sensor3, Sensor6"
+3,4,45,0.05380231541106184,3,"[1, 2, 5]","Sensor2, Sensor3, Sensor6"
+4,3,44,0.1400376027259398,3,"[0, 1, 5]","Sensor1, Sensor2, Sensor6"
