@@ -50,19 +50,6 @@ print("\n=== 1. LOADING DATA FROM EXCEL ===")
 file_path = r"C:\Users\melig\Desktop\OMA\Roberto_signal_Puente_Circunv.xlsx"
 fs = 100  # sampling frequency
 
-target_freqs = np.array([
-    2.87,
-    3.76,
-    4.53,
-    5.05,
-    5.31,
-    6.14,
-    6.42,
-    6.81,
-    7.24,
-    8.31,
-    9.51
-])
 
 try:
     df = pd.read_excel(file_path)
