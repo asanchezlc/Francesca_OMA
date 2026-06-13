@@ -47,7 +47,7 @@ print("\n=== 1. LOADING DATA FROM CSV ===")
 file_path = r"C:\Users\User\Documents\DOCTORADO\Francesca_OMA\data\simulated_records_1000Hz.csv"
 fs = 1000  # sampling frequency
 df = pd.read_csv(file_path)
-
+Phi_id = df.columns.tolist()
 
 df = df.select_dtypes(include=[np.number])
 df = df.dropna()
@@ -213,6 +213,15 @@ Lambda, Psi = np.linalg.eig(FIM)
 G = np.multiply(np.dot(Phi_FIM_analysis, Psi), np.dot(Phi_FIM_analysis, Psi))
 Fe = np.dot(G, np.linalg.inv(np.diag(Lambda)))
 Ed = np.sum(Fe, axis=1)
+
+# ============================================================
+# EFI METHOD
+# ============================================================
+EfI_results = outils.EFI(Phi_FIM_analysis, Phi_id, n_sensors=7)
+sensors_selected = EfI_results["results"]["Phi_id"]
+Phi_EFI = EfI_results["results"]["Phi"]
+fig, ax = outils.plot_MAC_1(outils.MaC_nan(Phi_EFI, Phi_EFI))
+print(f"Sensors selected by EFI: {sensors_selected}")
 
 # ============================================================
 # SAVE RESULTS

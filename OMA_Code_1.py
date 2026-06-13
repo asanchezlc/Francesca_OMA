@@ -57,6 +57,20 @@ except:
     file_path = r"C:\Users\User\Documents\DOCTORADO_CODES\Francesca\Roberto_signal_Puente_Circunv.xlsx"
     df = pd.read_excel(file_path)
 
+# target_freqs = np.array([
+#     2.87,
+#     3.76,
+#     4.53,
+#     5.05,
+#     5.31,
+#     6.14,
+#     6.42,
+#     6.81,
+#     7.24,
+#     8.31,
+#     9.51
+# ])
+
 
 df = df.select_dtypes(include=[np.number])
 df = df.dropna()
