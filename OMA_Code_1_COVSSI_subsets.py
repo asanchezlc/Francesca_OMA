@@ -5,6 +5,7 @@ import pandas as pd
 import pathlib
 
 import helpers.outils as outils
+import helpers.plots as plots
 
 from pyoma2.algorithms.ssi import SSI
 from pyoma2.algorithms.data.run_params import SSIRunParams, Clustering, Step1, Step2, Step3
@@ -157,13 +158,14 @@ outils.save_json_serialized(results, output_dir / f"{OMA_METHOD}_results.json")
 # ANALYSIS OF SUBSETS of sensors
 ####################################################################
 
-subsets = [[1, 2, 5], [0, 1, 2], [1, 2, 6], [0, 1, 5]]
+# subsets = [[1, 2, 5], [0, 1, 2], [1, 2, 6], [0, 1, 5]]
+subsets = [[1, 2, 5], [0, 1, 7], [1, 2, 7]]
 figures_dir.mkdir(parents=True, exist_ok=True)
 
 print(f"\n=== 2. COV-SSI computation using {OMA_METHOD} for sensor subsets ===")
 
 all_results = {}
-
+Phi_global = np.asarray(results["Phi_oma"])
 for subset_id, subset in enumerate(subsets, start=1):
 
     subset_name = "subset_" + "_".join(map(str, subset))
@@ -198,12 +200,16 @@ for subset_id, subset in enumerate(subsets, start=1):
 
     step2 = Step2(
         algo="hierarc",
-        linkage="average",
-        dc="auto"
+        linkage="complete",
+        # linkage="average",
+        # distance=["dlambda", "dMAC"],
+        distance=["dlambda"],
+        dc="0.049"
+        # dc="auto"
     )
 
     step3 = Step3(
-        post_proc=["merge_similar", "fn_IQR", "min_size_pctg"],
+        post_proc=["fn_IQR", "min_size_pctg"],
         min_pctg=0.15,
         freqlim=SSI_FREQLIM,
         select="medoid"
@@ -219,6 +225,8 @@ for subset_id, subset in enumerate(subsets, start=1):
     Pali_ss.add_algorithms(oma_alg)
     Pali_ss.run_by_name(OMA_METHOD)
     Pali_ss[OMA_METHOD].run_all_clustering()
+
+    # fig, ax = oma_alg.plot_dtot_distrib("hierarc_avg")
 
     fig, ax = oma_alg.plot_stab_cluster(
         "hierarc_avg",
@@ -241,6 +249,22 @@ for subset_id, subset in enumerate(subsets, start=1):
     Fn_oma = np.asarray(clus_res.Fn, dtype=float)
     Phi_oma = np.asarray(clus_res.Phi)
 
+    Phi_global_subset = Phi_global[subset, :]
+
+    MAC_global_subset = outils.MaC(
+        Phi_global_subset,
+        Phi_oma
+    )
+    fig, ax = plots.plot_rectangular_MAC(MAC_global_subset, language='English')
+    ax.set_xlabel('Subset')
+    ax.set_ylabel('Global')
+    fig.savefig(
+        figures_dir / f"{OMA_METHOD}_{subset_name}_MAC_global_subset.png",
+        dpi=300,
+        bbox_inches="tight"
+    )
+    plt.close(fig)
+
     all_results[subset_name] = {
         "subset_id": subset_id,
         "subset_indices": subset,
@@ -251,5 +275,7 @@ for subset_id, subset in enumerate(subsets, start=1):
 
     print(f"Fn_oma for {subset_name} [Hz]:")
     print(Fn_oma)
+
+
 
 outils.save_json_serialized(all_results, output_dir / f"{OMA_METHOD}_subsets_results.json")

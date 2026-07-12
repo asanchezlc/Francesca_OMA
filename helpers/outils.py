@@ -166,6 +166,51 @@ def MaC_nan(phi_X, phi_A):
     return MAC
 
 
+def MaC(phi_X, phi_A):
+    """
+    If the input arrays are in the form (n,) (1D arrays) the output is a
+    scalar, if the input are in the form (n,m) the output is a (m,m) matrix
+    (MAC matrix). [m: number of modes]
+    Literature:
+        [1] Maia, N. M. M., and J. M. M. Silva.
+            "Modal analysis identification techniques." Philosophical
+            Transactions of the Royal Society of London. Series A:
+            Mathematical, Physical and Engineering Sciences 359.1778
+            (2001): 29-40.
+    :param phi_X: Mode shape matrix X, shape: ``(n_locations, n_modes)``
+        or ``n_locations``.
+    :param phi_A: Mode shape matrix A, shape: ``(n_locations, n_modes)``
+        or ``n_locations``.
+    :return: MAC matrix. Returns MAC value if both ``phi_X`` and ``phi_A`` are
+        one-dimensional arrays.
+    """
+    if phi_X.ndim == 1:
+        phi_X = phi_X[:, np.newaxis]
+
+    if phi_A.ndim == 1:
+        phi_A = phi_A[:, np.newaxis]
+
+    if phi_X.ndim > 2 or phi_A.ndim > 2:
+        raise Exception(
+            f'Mode shape matrices must have 1 or 2 dimensions (phi_X: {phi_X.ndim}, phi_A: {phi_A.ndim})')
+
+    if phi_X.shape[0] != phi_A.shape[0]:
+        raise Exception(
+            f'Mode shapes must have the same first dimension (phi_X: {phi_X.shape[0]}, phi_A: {phi_A.shape[0]})')
+
+    MAC = np.real(np.abs(np.conj(phi_X).T @ phi_A)**2)
+    for i in range(phi_X.shape[1]):
+        for j in range(phi_A.shape[1]):
+            MAC[i, j] = MAC[i, j] /\
+                np.real((np.conj(phi_X[:, i]) @ phi_X[:, i] *
+                         np.conj(phi_A[:, j]) @ phi_A[:, j]))
+
+    if MAC.shape == (1, 1):
+        MAC = MAC[0, 0]
+
+    return MAC
+
+
 def save_json_serialized(obj, filepath, omit_keys=None) -> None:
     serial = serialize_dictionary_v2(obj, omit_keys=omit_keys)
     with open(filepath, 'w') as f:
