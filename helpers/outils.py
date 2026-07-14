@@ -7,6 +7,89 @@ import matplotlib.pyplot as plt
 import warnings
 
 
+def match_modes_fem_oma_II(frequencies_oma, modes_oma, frequencies_model, modes_model,
+                           oma_labels=None,
+                           remove_matched_modes=True,
+                           factor_freq=0.5,
+                           factor_mac=0.5,
+                           label_FEM='FEM'):
+    """
+    Match each OMA mode to the best FEM mode based on combined frequency and MAC distance.
+
+    Remark: similar logic to match_modes_fem_oma, but with a more flexible approach (the input
+    data is more straightforward)
+
+    Remark II: In this function, it is needed that the fem modes are already read for the specific nodes
+
+    Parameters:
+    - frequencies_oma: array-like, shape (n_oma,)
+    - modes_oma: array-like, shape (n_sensors, n_oma)
+    - frequencies_model: array-like, shape (n_fem,)
+    - modes_model: array-like, shape (n_sensors, n_fem)
+    - oma_labels: list of strings (e.g., ['Mode_1', ...]), optional
+    - remove_matched_modes: bool, whether to remove FEM modes once matched
+    - factor_freq: float, weighting factor for frequency mismatch (0–1)
+    - factor_mac: float, weighting factor for MAC distance (0–1)
+
+    Returns:
+    - matched_info: dict mapping each OMA label to:
+        {
+            'Mode_FEM': 'Mode_k',
+            'Frequency_FEM': float,
+            'MAC': float,
+            'factor_freq': float,
+            'factor_mac': float
+        }
+    - fem_labels: list of len(frequencies_model), where each entry is:
+        'Mode_i' (if matched to OMA mode i), or None
+    """
+    assert len(
+        frequencies_oma) == modes_oma.shape[1], "OMA frequencies/modes mismatch"
+    assert len(
+        frequencies_model) == modes_model.shape[1], "Model frequencies/modes mismatch"
+    assert modes_oma.shape[0] == modes_model.shape[0], "Sensor/channel count mismatch"
+
+    if oma_labels is None:
+        oma_labels = [f'Mode_{i+1}' for i in range(len(frequencies_oma))]
+
+    matched_info = {}
+    fem_labels = [None] * len(frequencies_model)
+    available_fem_indices = list(range(len(frequencies_model)))
+
+    for i, label in enumerate(oma_labels):
+        freq_oma = frequencies_oma[i]
+        phi_oma = modes_oma[:, i]
+
+        # Select subset of currently available FEM modes
+        freqs_fem_avail = frequencies_model[available_fem_indices]
+        modes_fem_avail = modes_model[:, available_fem_indices]
+
+        # Combine distances
+        freq_diff = np.abs(freqs_fem_avail - freq_oma) / freq_oma
+        mac = MaC_nan(phi_oma, modes_fem_avail)
+        mac = np.atleast_1d(np.squeeze(mac))
+        mac_dist = 1.0 - mac
+        combined_dist = factor_freq * freq_diff + factor_mac * mac_dist
+        idx_local = np.argmin(combined_dist)
+        idx_global = available_fem_indices[idx_local]
+
+        # Save match info
+        fem_labels[idx_global] = label
+        matched_info[label] = {
+            f'Mode_{label_FEM}': f'Mode_{idx_global + 1}',
+            f'Frequency_{label_FEM}': frequencies_model[idx_global],
+            'MAC': mac[idx_local],
+            'factor_freq': factor_freq,
+            'factor_mac': factor_mac
+        }
+
+        # Optionally remove matched FEM mode
+        if remove_matched_modes:
+            available_fem_indices.remove(idx_global)
+
+    return matched_info, fem_labels
+
+
 def EFI(Phi, Phi_id, n_sensors):
     """
     Function Duties:

@@ -22,9 +22,15 @@ output_dir.mkdir(exist_ok=True)
 
 OMA_METHOD = "autossi"
 
-SSI_BR = 90          # Number of block rows in the Hankel matrix
+opt = 1
+if opt == 1:
+    SSI_BR = 120          # Number of block rows in the Hankel matrix
+    SSI_ORDMAX = 90      # Maximum model order
+else:
+    SSI_BR = 100          # Number of block rows in the Hankel matrix
+    SSI_ORDMAX = 105      # Maximum model order
+
 SSI_ORDMIN = 2       # Minimum model order
-SSI_ORDMAX = 120      # Maximum model order
 SSI_STEP = 2         # Model order increment
 SSI_FREQLIM = (2.0, 10.0)
 
@@ -36,7 +42,6 @@ print("\n=== 1. LOADING DATA FROM EXCEL ===")
 
 file_path = r"C:\Users\melig\Desktop\OMA\Roberto_signal_Puente_Circunv.xlsx"
 fs = 100  # sampling frequency
-
 
 try:
     df = pd.read_excel(file_path)
@@ -90,14 +95,16 @@ step1 = Step1(
 step2 = Step2(
     algo="hierarc",
     linkage="average",
-    dc="auto"
+    dc="0.07"
+    # dc="auto"
 )
 
 step3 = Step3(
     post_proc=["merge_similar", "fn_IQR", "min_size_pctg"],
-    min_pctg=0.15,
+    min_pctg=0.27,
     freqlim=SSI_FREQLIM,
-    select="medoid"
+    select="avg"
+    # select="medoid"
 )
 
 clus = Clustering(
@@ -110,14 +117,30 @@ oma_alg.add_clustering(clus)
 Pali_ss.add_algorithms(oma_alg)
 Pali_ss.run_by_name(OMA_METHOD)
 Pali_ss[OMA_METHOD].run_all_clustering()
-
+# fig_dc, ax_dc = oma_alg.plot_dtot_distrib("hierarc_avg")
 fig, ax = oma_alg.plot_stab_cluster("hierarc_avg")
-
+fig.savefig(
+    figures_dir / "autossi_global.png",
+    dpi=300,
+    bbox_inches="tight"
+)
 clus_res = oma_alg.result.clustering_results["hierarc_avg"]
 
 Fn_oma = np.asarray(clus_res.Fn, dtype=float)
 Phi_oma = np.asarray(clus_res.Phi)
+mac = outils.MaC(Phi_oma, Phi_oma)
+fig, ax = plots.plot_rectangular_MAC(mac, language='English')
+fig.savefig(
+    figures_dir / "AutoMAC_Global.png",
+    dpi=300,
+    bbox_inches="tight"
+)
 
+Fn_global = np.asarray(Fn_oma, dtype=float).ravel().copy()
+Phi_global = np.asarray(Phi_oma).copy()
+
+print(f"Fn_oma global [Hz]:")
+print(Fn_global)
 # ============================================================
 # DERIVED METRICS
 # ============================================================
@@ -208,11 +231,19 @@ for subset_id, subset in enumerate(subsets, start=1):
         # dc="auto"
     )
 
+    if opt == 1:
+        min_pctg = 0.2
+        if subset_id == 1:
+            min_pctg = 0.3
+    else:
+        min_pctg = 0.1
+
     step3 = Step3(
         post_proc=["fn_IQR", "min_size_pctg"],
-        min_pctg=0.15,
+        min_pctg=min_pctg,
         freqlim=SSI_FREQLIM,
-        select="medoid"
+        select="avg"
+        # select="medoid"
     )
 
     clus = Clustering(
@@ -224,6 +255,13 @@ for subset_id, subset in enumerate(subsets, start=1):
 
     Pali_ss.add_algorithms(oma_alg)
     Pali_ss.run_by_name(OMA_METHOD)
+
+    # fig_raw, ax_raw = oma_alg.plot_stab(
+    #     freqlim=SSI_FREQLIM,
+    #     hide_poles=False,
+    #     color_scheme="high_contrast",
+    # )
+
     Pali_ss[OMA_METHOD].run_all_clustering()
 
     # fig, ax = oma_alg.plot_dtot_distrib("hierarc_avg")
@@ -246,14 +284,47 @@ for subset_id, subset in enumerate(subsets, start=1):
 
     clus_res = oma_alg.result.clustering_results["hierarc_avg"]
 
-    Fn_oma = np.asarray(clus_res.Fn, dtype=float)
-    Phi_oma = np.asarray(clus_res.Phi)
-
+    Fn_subset = np.asarray(clus_res.Fn, dtype=float).ravel()
+    Phi_subset = np.asarray(clus_res.Phi)
     Phi_global_subset = Phi_global[subset, :]
+
+    matching_mask = ~((Fn_subset >= 20))
+    # matching_mask = ~((Fn_subset >= 6.0) & (Fn_subset <= 7.0))
+
+    Fn_subset_match = Fn_subset[matching_mask]
+    Phi_subset_match = Phi_subset[:, matching_mask]
+
+    subset_mode_labels = [
+        f"Subset_Mode_{i + 1}"
+        for i in range(len(Fn_subset_match))
+    ]
+
+    matched_info, global_mode_labels = outils.match_modes_fem_oma_II(
+        frequencies_oma=Fn_subset_match,
+        modes_oma=Phi_subset_match,
+        frequencies_model=Fn_global,
+        modes_model=Phi_global_subset,
+        oma_labels=subset_mode_labels,
+        remove_matched_modes=True,
+        factor_freq=0.8,
+        factor_mac=0.2,
+        label_FEM="GLOBAL",
+    )
+    for i, oma_label in enumerate(subset_mode_labels):
+        info = matched_info[oma_label]
+
+        print(
+            f"{oma_label:<15} "
+            f"{Fn_subset_match[i]:>15.4f} "
+            f"{info['Mode_GLOBAL']:>15} "
+            f"{info['Frequency_GLOBAL']:>15.4f} "
+            f"{info['MAC']:>10.4f}"
+        )
+
 
     MAC_global_subset = outils.MaC(
         Phi_global_subset,
-        Phi_oma
+        Phi_subset
     )
     fig, ax = plots.plot_rectangular_MAC(MAC_global_subset, language='English')
     ax.set_xlabel('Subset')
@@ -269,13 +340,13 @@ for subset_id, subset in enumerate(subsets, start=1):
         "subset_id": subset_id,
         "subset_indices": subset,
         "subset_sensors": subset_sensor_names,
-        "Fn_oma_Hz": Fn_oma,
-        "Phi_oma": Phi_oma,
+        "Fn_oma_Hz": Fn_subset,
+        "Phi_oma": Phi_subset,
+        # "matching_to_global": matched_info,
+        # "global_mode_labels": global_mode_labels,
     }
 
     print(f"Fn_oma for {subset_name} [Hz]:")
-    print(Fn_oma)
-
-
+    print(Fn_subset)
 
 outils.save_json_serialized(all_results, output_dir / f"{OMA_METHOD}_subsets_results.json")
