@@ -46,7 +46,7 @@ fs = 100  # sampling frequency
 try:
     df = pd.read_excel(file_path)
 except:
-    file_path = r"C:\Users\User\Documents\DOCTORADO_CODES\Francesca_OMA\Roberto_signal_Puente_Circunv.xlsx"
+    file_path = r"C:\Users\User\Documents\DOCTORADO\Francesca\MendezNuñez\Roberto_signal_Puente_Circunv.xlsx"
     df = pd.read_excel(file_path)
 
 
@@ -306,8 +306,8 @@ for subset_id, subset in enumerate(subsets, start=1):
         modes_model=Phi_global_subset,
         oma_labels=subset_mode_labels,
         remove_matched_modes=True,
-        factor_freq=0.8,
-        factor_mac=0.2,
+        factor_freq=0.98,
+        factor_mac=0.02,
         label_FEM="GLOBAL",
     )
     for i, oma_label in enumerate(subset_mode_labels):
@@ -320,7 +320,6 @@ for subset_id, subset in enumerate(subsets, start=1):
             f"{info['Frequency_GLOBAL']:>15.4f} "
             f"{info['MAC']:>10.4f}"
         )
-
 
     MAC_global_subset = outils.MaC(
         Phi_global_subset,
