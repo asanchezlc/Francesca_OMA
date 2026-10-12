@@ -33,11 +33,20 @@ Run in this order:
 | 1 | `OMA_Code_1_OOS_1_run_oma.py` | training record + `Accelerations_*.xlsx` | `oos_bridge/modal_results.json` (Fn, Phi of every global and subset run), `oos_bridge/settings.json` (settings, file hashes), `oos_bridge/excluded_records.csv`, `oos_bridge/plots/`, `oos_bridge/run_log.txt` | ~10 min |
 | 2 | `OMA_Code_1_OOS_2_reference_modes.py` | `Accelerations_21.xlsx` (global OMA rerun), `oos_bridge/modal_results.json`, `oos_bridge/settings.json` | `reference_modes/`: `reference_modes.json` / `.csv` (Ref_1..Ref_11), `reference_autoMAC.*`, `consistency_*.csv`, `settings.json` | ~1 min |
 | 3 | `OMA_Code_1_OOS_3_validate_subsets.py` | `oos_bridge/modal_results.json`, `oos_bridge/settings.json`, `reference_modes/reference_modes.json`, `reference_modes/settings.json`, `reference_modes/consistency_MAC_assigned.csv` | `oos_bridge/v3/`: `settings.json`, `global_ref_labelling.csv`, `per_mode_matching.csv`, `per_record_subset_metrics.csv`, `aggregated_metrics.csv`, `ref_mode_recovery.csv`, `training_in_sample.csv`, `training_vs_table6.csv`, `run_log.txt` | seconds |
+| 4 | `OMA_Code_1_OOS_4_all_layouts_run.py` | training record + `Accelerations_*.xlsx`, `oos_bridge/modal_results.json`, `oos_bridge/settings.json` | `oos_bridge/all_layouts/`: `modes/<record>.jsonl` (subset modes of all 120 three-sensor layouts, resumable store), `sanity_check_table6_layouts.csv`, `failures.csv`, `settings.json`, `run_log.txt` | ~25 min with `N_JOBS = 8` |
+| 5 | `OMA_Code_1_OOS_5_all_layouts_analysis.py` | `oos_bridge/all_layouts/modes/`, the step 1-3 inputs above, `oos_bridge/v3/per_record_subset_metrics.csv`, and the inputs of J (training record, `signal_Geo.xlsx`, `results/EFDD_results.json`, `bruteforce_results/bruteforce_ranking_all_combinations.csv`) | `oos_bridge/all_layouts/analysis/`: `per_layout_record_metrics.csv`, `per_layout_summary.csv`, `table6_layouts_rank.csv`, `correlations.csv`, `topk_by_J.csv`, `scatter_*.png`, `settings.json`, `run_log.txt` | ~1 min |
 
-- Step 1 is the only one that runs the OMA of the test records. Steps 2 and 3, the debug tool and
-  the superseded v2 import it as a module (`import OMA_Code_1_OOS_1_run_oma as v1`) and take
-  every OMA and matching constant from it. If you change a constant or a subset in step 1,
-  rerun step 1 before steps 2 and 3.
+- Step 1 runs the global OMA of every record and the subset OMA of the three Table-6 layouts;
+  step 4 runs the subset OMA of all 120 layouts. Steps 2-5, the debug tool and the superseded
+  v2 import step 1 as a module
+  (`import OMA_Code_1_OOS_1_run_oma as v1`) and take every OMA and matching constant from it.
+  If you change a constant or a subset in step 1, rerun step 1 before the later steps.
+- Steps 4-5 extend step 3 from the three Table-6 layouts to all 120 three-sensor layouts
+  (reviewer comment R2-C3). Step 4 runs the subset OMA of every (record, layout) pair with
+  the step 1 settings and skips the pairs already stored when restarted; the results do not
+  depend on `N_JOBS`. Step 5 imports the matching and metrics of step 3, and recomputes the
+  objective J of the submitted paper with the functions of `brute_force_sensor_selection.py`
+  (checked against its saved ranking).
 - Step 1 also writes matching tables of its own (`per_mode_matching.csv`, `aggregated_metrics.csv`,
   …) with the original matcher; they are superseded by `oos_bridge/v3/`.
 - Step 3 evaluates the subsets against the reference modes only: global modes without a Ref
